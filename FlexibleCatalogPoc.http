@@ -1,0 +1,57 @@
+@FlexibleCatalogPoc_HostAddress = http://localhost:5017
+
+### List all products (mixed schemas in one collection)
+GET {{FlexibleCatalogPoc_HostAddress}}/api/products
+
+### Electronics only
+GET {{FlexibleCatalogPoc_HostAddress}}/api/products?category=electronics
+
+### Nested attribute search: phones/laptops with 128GB
+GET {{FlexibleCatalogPoc_HostAddress}}/api/products/search?storageGb=128
+
+### Nested attribute search: linen sofas
+GET {{FlexibleCatalogPoc_HostAddress}}/api/products/search?fabric=linen
+
+### Text search
+GET {{FlexibleCatalogPoc_HostAddress}}/api/products/search?q=jacket
+
+### Create a furniture product with sofa-only attributes
+POST {{FlexibleCatalogPoc_HostAddress}}/api/products
+Content-Type: application/json
+
+{
+  "sku": "POUF-010",
+  "name": "Floor Pouf",
+  "category": "furniture",
+  "brand": "Harbor Home",
+  "price": 120,
+  "currency": "USD",
+  "attributes": {
+    "fabric": "wool",
+    "widthCm": 55,
+    "seats": 1
+  },
+  "variants": [
+    {
+      "sku": "POUF-010-GRY",
+      "price": 120,
+      "stock": 10,
+      "extra": { "color": "grey", "fabric": "wool" }
+    }
+  ],
+  "tags": ["pouf", "living-room"]
+}
+
+### Demo cart
+GET {{FlexibleCatalogPoc_HostAddress}}/api/carts/demo
+
+### Apply SAVE10
+POST {{FlexibleCatalogPoc_HostAddress}}/api/carts/demo/promo
+Content-Type: application/json
+
+{
+  "code": "SAVE10"
+}
+
+### Mock checkout
+POST {{FlexibleCatalogPoc_HostAddress}}/api/carts/demo/checkout

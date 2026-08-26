@@ -1,0 +1,53 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Catalog";
+}
+
+<h1 class="page-title">Shop by shape, not by table</h1>
+<p class="lede">
+    Phones, sofas, and tees share one <code>products</code> collection. Each document carries different nested
+    <code>attributes</code>, variants, and reviews — the reason this POC uses MongoDB instead of a rigid SQL schema.
+</p>
+
+@if (Model.SetupError is not null)
+{
+    <div class="alert alert-warning">
+        <strong>MongoDB is not connected yet.</strong>
+        <div>@Model.SetupError</div>
+        <div class="mt-2">Paste your Atlas connection string into <code>appsettings.Development.json</code>. See the README.</div>
+    </div>
+}
+else
+{
+    <div class="category-bar">
+        <a class="chip @(string.IsNullOrEmpty(Model.Category) ? "active" : null)" href="/">All</a>
+        <a class="chip @(Model.Category == "electronics" ? "active" : null)" href="/?category=electronics">Electronics</a>
+        <a class="chip @(Model.Category == "furniture" ? "active" : null)" href="/?category=furniture">Furniture</a>
+        <a class="chip @(Model.Category == "apparel" ? "active" : null)" href="/?category=apparel">Apparel</a>
+    </div>
+
+    @foreach (var group in Model.Products.GroupBy(p => p.Category))
+    {
+        <h2 class="category-heading">@group.Key</h2>
+        <div class="row g-3 mb-4">
+            @foreach (var product in group)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <article class="product-card">
+                        <div class="eyebrow">@product.Brand · @product.Sku</div>
+                        <h3><a href="/product/@product.Id">@product.Name</a></h3>
+                        <div class="price">@product.Price.ToString("C")</div>
+                        <div class="chips">
+                            @foreach (var (key, value) in BsonJson.DisplayPairs(product.Attributes))
+                            {
+                                <span class="attr">@key: @value</span>
+                            }
+                        </div>
+                        <a class="stretched-link-btn" href="/product/@product.Id">View variants &amp; reviews</a>
+                    </article>
+                </div>
+            }
+        </div>
+    }
+}

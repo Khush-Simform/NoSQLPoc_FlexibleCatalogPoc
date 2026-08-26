@@ -1,0 +1,132 @@
+@page "/cart"
+@model CartPageModel
+@{
+    ViewData["Title"] = "Cart";
+    var cart = Model.Cart;
+}
+
+<h1 class="page-title">Demo cart</h1>
+<p class="lede">One MongoDB document for shopper <code>demo-user</code>: line items, promo snapshot, totals, and mock payment status.</p>
+
+@if (Model.Error is not null)
+{
+    <div class="alert alert-danger">@Model.Error</div>
+}
+
+@if (cart is null)
+{
+    <p>Cart is unavailable until MongoDB is connected.</p>
+    return;
+}
+
+@if (cart.Payment is not null)
+{
+    <div class="payment-banner @(cart.Payment.Status == "Paid" ? "paid" : "processing")">
+        <strong>@cart.Payment.Message</strong>
+        @if (!string.IsNullOrEmpty(cart.Payment.TransactionId))
+        {
+            <span>· @cart.Payment.TransactionId</span>
+        }
+        @if (cart.Payment.Timeline.Count > 0)
+        {
+            <ol class="timeline">
+                @foreach (var step in cart.Payment.Timeline)
+                {
+                    <li>@step</li>
+                }
+            </ol>
+        }
+    </div>
+}
+
+@if (cart.Items.Count == 0)
+{
+    <p>Cart is empty. <a href="/">Browse the catalog</a>.</p>
+}
+else
+{
+    <div class="panel">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Snapshot</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in cart.Items)
+            {
+                <tr>
+                    <td>
+                        <strong>@item.Name</strong>
+                        <div class="muted">@item.Sku</div>
+                    </td>
+                    <td>
+                        <div class="chips">
+                            @foreach (var (key, value) in BsonJson.DisplayPairs(item.AttributeSnapshot))
+                            {
+                                <span class="attr">@key: @value</span>
+                            }
+                        </div>
+                    </td>
+                    <td>@item.Qty</td>
+                    <td>@((item.UnitPrice * item.Qty).ToString("C"))</td>
+                    <td>
+                        <form method="post" asp-page-handler="Remove">
+                            <input type="hidden" name="sku" value="@item.Sku" />
+                            <button class="btn btn-sm btn-outline-secondary" type="submit">Remove</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        <form method="post" asp-page-handler="Promo" class="row g-2 align-items-end mb-3">
+            <div class="col-auto">
+                <label class="form-label" asp-for="PromoCode">Promo</label>
+                <input class="form-control" asp-for="PromoCode" />
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-dark" type="submit">Apply (try SAVE10)</button>
+            </div>
+            @if (cart.Promo is not null)
+            {
+                <div class="col-auto pb-2">Applied: @cart.Promo.Code (@cart.Promo.PercentOff% off)</div>
+            }
+        </form>
+
+        <div class="totals">
+            <div>Subtotal <span>@cart.Totals.Subtotal.ToString("C")</span></div>
+            <div>Discount <span>@cart.Totals.Discount.ToString("C")</span></div>
+            <div class="grand">Total <span>@cart.Totals.Total.ToString("C")</span></div>
+        </div>
+
+        @if (cart.Status != "Paid")
+        {
+            <form method="post" asp-page-handler="Checkout" id="checkout-form">
+                <button class="btn btn-accent mt-3" type="submit">Checkout (mock payment)</button>
+            </form>
+            <div id="pay-overlay" class="pay-overlay" hidden>Payment processing...</div>
+        }
+        else
+        {
+            <p class="mt-3 muted">Already paid. Add another catalog item to start a new demo order.</p>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script>
+        const form = document.getElementById('checkout-form');
+        const overlay = document.getElementById('pay-overlay');
+        if (form && overlay) {
+            form.addEventListener('submit', () => {
+                overlay.hidden = false;
+            });
+        }
+    </script>
+}

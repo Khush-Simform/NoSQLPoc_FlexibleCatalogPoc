@@ -1,0 +1,111 @@
+@page "/product/{id}"
+@model ProductModel
+@{
+    ViewData["Title"] = Model.Product?.Name ?? "Product";
+    var product = Model.Product;
+}
+
+@if (product is null)
+{
+    <div class="alert alert-warning">@Model.Error</div>
+    return;
+}
+
+<nav class="crumb"><a href="/">Catalog</a> / @product.Category / @product.Name</nav>
+<h1 class="page-title">@product.Name</h1>
+<p class="lede">@product.Brand · @product.Sku · same collection as every other category</p>
+
+@if (Model.Error is not null)
+{
+    <div class="alert alert-danger">@Model.Error</div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="panel">
+            <div class="price">@product.Price.ToString("C") <span class="muted">base</span></div>
+            <h2 class="h6 mt-3">Nested attributes</h2>
+            <div class="chips">
+                @foreach (var (key, value) in BsonJson.DisplayPairs(product.Attributes))
+                {
+                    <span class="attr">@key: @value</span>
+                }
+            </div>
+
+            <h2 class="h6 mt-4">Variants</h2>
+            <ul class="variant-list">
+                @foreach (var variant in product.Variants)
+                {
+                    <li>
+                        <strong>@variant.Sku</strong>
+                        · @variant.Price.ToString("C")
+                        · stock @variant.Stock
+                        @foreach (var (key, value) in BsonJson.DisplayPairs(variant.Extra))
+                        {
+                            <span class="attr">@key: @value</span>
+                        }
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <div class="panel mt-3">
+            <h2 class="h6">Embedded reviews</h2>
+            @if (product.Reviews.Count == 0)
+            {
+                <p class="muted">No reviews yet.</p>
+            }
+            else
+            {
+                @foreach (var review in product.Reviews)
+                {
+                    <blockquote class="review">
+                        <strong>@review.Author</strong> · @review.Rating / 5
+                        <p>@review.Comment</p>
+                    </blockquote>
+                }
+            }
+            <form method="post" asp-page-handler="AddReview" class="mt-3">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <input class="form-control" asp-for="Author" placeholder="Your name" />
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" asp-for="Rating">
+                            <option value="5">5</option>
+                            <option value="4">4</option>
+                            <option value="3">3</option>
+                            <option value="2">2</option>
+                            <option value="1">1</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <input class="form-control" asp-for="Comment" placeholder="Add a review (stored on the product document)" />
+                    </div>
+                </div>
+                <button class="btn btn-outline-dark mt-2" type="submit">Append review</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="panel sticky-panel">
+            <h2 class="h6">Add to demo cart</h2>
+            <form method="post" asp-page-handler="AddToCart">
+                <label class="form-label" asp-for="Sku">Variant SKU</label>
+                <select class="form-select" asp-for="Sku">
+                    @foreach (var variant in product.Variants)
+                    {
+                        <option value="@variant.Sku">@variant.Sku · @variant.Price.ToString("C")</option>
+                    }
+                    @if (product.Variants.Count == 0)
+                    {
+                        <option value="@product.Sku">@product.Sku</option>
+                    }
+                </select>
+                <label class="form-label mt-2" asp-for="Qty">Qty</label>
+                <input class="form-control" asp-for="Qty" type="number" min="1" />
+                <button class="btn btn-accent w-100 mt-3" type="submit">Add to cart</button>
+            </form>
+        </div>
+    </div>
+</div>
